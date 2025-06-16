@@ -1,0 +1,5 @@
+indico:
+  instance_url:
+  api_token:
+  event_id:
+  event_timezone: Australia/Adelaide

@@ -1,0 +1,15 @@
+[project]
+name = "indico-tools"
+version = "0.1.0"
+description = "Tools for integration with an Indico conference."
+readme = "README.md"
+license = "MIT"
+authors = [
+  {name = "Violet Harvey", email = "95004367+vmharvey@users.noreply.github.com"},
+]
+
+requires-python = ">=3.13"
+dependencies = [
+  "pyyaml>=6.0.2",
+  "requests>=2.32.4",
+]
