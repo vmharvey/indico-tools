@@ -1,5 +1,5 @@
-from .event import IndicoEvent
+from .event import Event
 
 __all__ = (
-  'IndicoEvent'
+  'Event'
 )

@@ -5,7 +5,7 @@ import sys
 
 import yaml
 
-from indico import IndicoEvent
+from indico import Event
 
 protection_message = "The organisers have restricted access to this material to registrants only"
 
@@ -46,7 +46,7 @@ def main():
   event_id = config['indico']['event_id']
   event_timezone = config['indico']['event_timezone']
 
-  event = IndicoEvent(event_id = event_id, api_token = api_token, timezone = event_timezone)
+  event = Event(event_id = event_id, api_token = api_token, timezone = event_timezone)
   sessions = event.get_sessions()
   regs = event.get_registration_forms()
 
@@ -66,7 +66,7 @@ def main():
         logger.debug(f"Contribution: {cont['url']}, folder: {folder_id}")
 
         # For non-default folders, probably need to pass the name in
-        # IndicoEvent.post_attachment() properly and I don't know how yet
+        # Event.post_attachment() properly and I don't know how yet
         if folder['title'] != None or not folder['default_folder']:
           raise RuntimeError(f"Unsupported folder seen: {folder}")
 
@@ -75,6 +75,7 @@ def main():
             desc = [protection_message]
             # Keep the existing description as well if there is one
             if attach['description']:
+              logger.debug(f"Keeping existing description: {attach['description']}")
               desc.insert(0, attach['description'])
 
             logger.info(f"Protecting {attach['filename']} with ACL '{reg_ident}'")

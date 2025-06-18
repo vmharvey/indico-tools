@@ -2,7 +2,7 @@ import requests
 
 from .utilities import convert_all_timestamps
 
-class IndicoEvent():
+class Event():
   """Interface to an Indico event via the HTTP API. See documentation at
   https://docs.getindico.io/en/stable/http-api/access/ and in particular,
   everything useful for events is (briefly) demonstrated at
