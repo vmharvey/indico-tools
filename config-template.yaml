@@ -3,3 +3,16 @@ indico:
   api_token:
   event_id:
   event_timezone: Australia/Adelaide
+
+  # Filters for exclusion of certain entries
+  slack_filters:
+    contribution:
+      type: []
+
+slack:
+  # Mapping of Indico room names to the webhooks channel names
+  channel_map:
+    My Room: my-channel
+
+  webhooks:
+    my-channel: https://hooks.slack.com/services/x/y/z
