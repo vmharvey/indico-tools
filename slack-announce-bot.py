@@ -196,10 +196,13 @@ def main():
     default = 'config.yaml', help = "configuration file")
   parser.add_argument('-d', '--debug', action = 'store_true',
     help = "write debug information to the terminal")
-  parser.add_argument('-s', '--simulated_start_time', type = str,
+  parser.add_argument('-s', '--simulated-start-time', type = str,
     default = None, help = "spoof the system clock as if it read this time"
     "when the script started. Use ISO 8601 timestamp format YYYY-MM-DDTHH:MM:SS."
     "The event timezone will be assumed")
+  parser.add_argument('-k', '--schedule-delay', type = int,
+    default = 0, help = "delay the announcement of talks other than the first"
+    "in each session by this many minutes (default: 0)")
   args = parser.parse_args()
 
   # Set up logging
@@ -222,6 +225,11 @@ def main():
     logging.addLevelName(logging.ERROR,    "[ERROR]")
     logging.addLevelName(logging.CRITICAL, "[FATAL]")
 
+  if args.simulated_start_time:
+    logger.debug(f"Will spoof system clock to {args.simulated_start_time}")
+  if args.schedule_delay:
+    logger.debug(f"Will delay talk announcements by {args.schedule_delay} minutes")
+
   with open(args.config) as config_file:
     config = yaml.load(config_file, Loader = yaml.Loader)
 
@@ -232,7 +240,10 @@ def main():
 
   event = Event(event_id = event_id, api_token = api_token, timezone = event_timezone)
   channels = {k: SlackChannel(v) for k,v in config['slack']['webhooks'].items()}
+
+  logger.debug("Fetching session information...")
   sessions = event.get_sessions()
+  logger.debug("Done")
 
   # Clean up the data structure
   for sess in sessions:
@@ -243,6 +254,7 @@ def main():
 
   # Start the simulated clock now, or just set up the real clock
   clock = Clock(timezone = event_timezone, simulated_start = args.simulated_start_time)
+  schedule_delay = timedelta(minutes = args.schedule_delay)
 
   for sess in sessions:
     session_title = sess['title']
@@ -253,6 +265,11 @@ def main():
     # Maybe useful for filtering
     type_title = sess['session']['title']
     slot_title = sess['slotTitle']
+
+    if len(session_title) > 37:
+      session_title_log = session_title[:37] + "..."
+    else:
+      session_title_log = session_title
 
     if room != room_choice:
       continue
@@ -268,7 +285,7 @@ def main():
     logger.debug(f"Time is {clock.time}")
 
     if clock.time < session_start:
-      logger.info(f"Waiting until {session_start} to start session '{session_title[:40]}'")
+      logger.info(f"Waiting until {session_start} to announce session '{session_title_log}'")
       while True:
         if clock.time < session_start:
           time.sleep(1)
@@ -277,7 +294,7 @@ def main():
 
       channels[channel_name].announce_session(sess)
     else:
-      logger.info(f"Ignoring session '{session_title[:40]}' that has already started")
+      logger.info(f"Ignoring session '{session_title_log}' that has already started")
 
     logger.debug(f"{type_title=}")
     logger.debug(f"{slot_title=}")
@@ -288,6 +305,11 @@ def main():
       talk_end = talk['endDate']
       talk_type = talk['type']
 
+      if len(talk_title) > 37:
+        talk_title_log = talk_title[:37] + "..."
+      else:
+        talk_title_log = talk_title
+
       if clock.time > talk_end:
         continue
       if talk_type in config['indico']['slack_filters'].get('contribution', {}).get('type', []):
@@ -297,18 +319,18 @@ def main():
       logger.debug(f"Time is {clock.time}")
 
       if talk_start == session_start:
-        logger.info(f"Announcing '{talk_title[:40]}' first in the session")
+        logger.info(f"Announcing '{talk_title_log}' first in the session")
         channels[channel_name].announce_talk(sess, talk)
-      elif clock.time < talk_start:
-        logger.info(f"Waiting until {talk_start} to start talk '{talk_title[:40]}'")
+      elif clock.time < talk_start + schedule_delay:
+        logger.info(f"Waiting until {talk_start + schedule_delay} to announce talk '{talk_title_log}'")
         while True:
-          if clock.time < talk_start:
+          if clock.time < talk_start + schedule_delay:
             time.sleep(1)
           else:
             break
         channels[channel_name].announce_talk(sess, talk)
       else:
-        logger.info(f"Ignoring talk '{talk_title[:40]}' that has already started")
+        logger.info(f"Ignoring talk '{talk_title_log}' that has already started")
 
 if __name__ == "__main__":
   main()
