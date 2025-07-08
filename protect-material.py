@@ -65,11 +65,6 @@ def main():
         folder_id = int(folder['id'])
         logger.debug(f"Contribution: {cont['url']}, folder: {folder_id}")
 
-        # For non-default folders, probably need to pass the name in
-        # Event.post_attachment() properly and I don't know how yet
-        if folder['title'] != None or not folder['default_folder']:
-          raise RuntimeError(f"Unsupported folder seen: {folder}")
-
         for attach in folder['attachments']:
           if not attach['is_protected']:
             desc = [protection_message]
@@ -78,7 +73,7 @@ def main():
               logger.debug(f"Keeping existing description: {attach['description']}")
               desc.insert(0, attach['description'])
 
-            logger.info(f"Protecting {attach['filename']} with ACL '{reg_ident}'")
+            logger.info(f"Protecting {attach.get('filename', 'NONE')} with ACL '{reg_ident}'")
             event.update_attachment(attach, {
                 # NOTE: This description appears on hover, everyone sees it,
                 # even when not logged in
