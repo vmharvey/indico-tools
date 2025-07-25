@@ -64,21 +64,17 @@ class SlackChannel():
 
     start = session['startDate']
     end = session['endDate']
-
     conveners = session['conveners']
-    if len(conveners) > 0:
-      convener_string = ", ".join([build_name(n) for n in conveners])
-    else:
-      convener_string = "N/A"
 
     # The session link has tabs for each day, and we can switch to the correct
     # tab for this day by doing this
     better_url = f"{url}#{start.strftime('%Y%m%d')}"
 
-    mrkdwn_text = "\n".join([
-      f"*Convener{'s' if len(conveners) > 1 else ''}:* {convener_string}",
-      f"<{better_url}|Click here to view the session timetable>",
-    ])
+    mrkdwn_lines = [f"<{better_url}|Click here to view the session timetable>"]
+    if len(conveners) > 0:
+      convener_string = ", ".join([build_name(n) for n in conveners])
+      mrkdwn_lines.insert(0, f"*Convener{'s' if len(conveners) > 1 else ''}:* {convener_string}")
+    mrkdwn_text = "\n".join(mrkdwn_lines)
 
     # Block Kit Builder: https://app.slack.com/block-kit-builder/T01CDMTHALA
     payload = {
@@ -284,10 +280,10 @@ def main():
 
     logger.debug(f"Time is {clock.time}")
 
-    if clock.time < session_start:
-      logger.info(f"Waiting until {session_start} to announce session '{session_title_log}'")
+    if clock.time < session_start + schedule_delay:
+      logger.info(f"Waiting until {session_start} + {schedule_delay} to announce session '{session_title_log}'")
       while True:
-        if clock.time < session_start:
+        if clock.time < session_start + schedule_delay:
           time.sleep(1)
         else:
           break
@@ -319,10 +315,13 @@ def main():
       logger.debug(f"Time is {clock.time}")
 
       if talk_start == session_start:
-        logger.info(f"Announcing '{talk_title_log}' first in the session")
-        channels[channel_name].announce_talk(sess, talk)
+        if clock.time < session_start + schedule_delay + timedelta(minutes = 1):
+          logger.info(f"Announcing '{talk_title_log}' first in the session")
+          channels[channel_name].announce_talk(sess, talk)
+        else:
+          logger.info(f"Ignoring talk '{talk_title_log}' that has already started")
       elif clock.time < talk_start + schedule_delay:
-        logger.info(f"Waiting until {talk_start + schedule_delay} to announce talk '{talk_title_log}'")
+        logger.info(f"Waiting until {talk_start} + {schedule_delay} to announce talk '{talk_title_log}'")
         while True:
           if clock.time < talk_start + schedule_delay:
             time.sleep(1)
