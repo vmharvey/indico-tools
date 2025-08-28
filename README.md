@@ -27,3 +27,5 @@ Setup:
 ## protect-material
 
 Scan the conference for presentation material (slides) and protect any material that is currently public. Protected material is configured to be accessible to conference registrants only.
+
+Using this script requires your Indico API token to have both the "Everything (all methods)" and "Everything (only GET)" scope access as well as the other scope stated above.
